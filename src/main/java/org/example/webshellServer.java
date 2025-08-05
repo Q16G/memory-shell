@@ -12,7 +12,7 @@ public class webshellServer {
 
     public static void main(String[] args) throws IOException {
         webshellServer webshellServer = new webshellServer("127.0.0.1", 9976);
-        String Command = "/bin/bash -c whoami";
+        String Command = "/bin/bash -c ls";
         webshellServer.write((new tlv.Request((byte) 0x02, Command.getBytes())).encode());
         tlv.Response response1 = webshellServer.readResponse();
         System.out.println(response1.getDataAsString());

